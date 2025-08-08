@@ -38,7 +38,5 @@ No API keys are required for this application.
 - Deck creation and management
 - Card search and filtering
 - User authentication
-- Deck sharing and collaboration
 
 ---
-Add more details as your project evolves. 

@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Deck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Load Supabase JS library directly -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2.38.4"></script>
+    <style>
+        /* Hide scrollbars but keep scrolling functionality */
+        html, body {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        html::-webkit-scrollbar, body::-webkit-scrollbar {
+            display: none;
+        }
+        
+        body {
+            background-color: #0f172a;
+            color: #f3f4f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+        
+        .table-container {
+            overflow: hidden;
+            border-radius: 1rem;
+            box-shadow: 0 0 30px rgba(17, 24, 39, 0.7);
+        }
+        
+        .btn-glow {
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .btn-glow::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: rotate(30deg);
+            transition: transform 0.5s;
+            z-index: -1;
+        }
+        
+        .btn-glow:hover::after {
+            transform: translateX(100%) rotate(30deg);
+        }
+        
+        .page-title {
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .float-animation {
+            animation: float 5s ease-in-out infinite;
+        }
+        /* Custom animation delays */
+        .delay-300ms {
+            animation-delay: 0.3s;
+        }
+        
+        .delay-500ms {
+            animation-delay: 0.5s;
+        }
+        
+        .delay-700ms {
+            animation-delay: 0.7s;
+        }
+        
+        /* Custom scrollbar styles for deck builder theme */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, rgba(59, 130, 246, 0.7), rgba(37, 99, 235, 0.9));
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 1));
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
+        }
+        
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(59, 130, 246, 0.7) rgba(30, 41, 59, 0.5);
+        }
+
+        /* Card Animation Styles */
+        .card-add-animation {
+            animation: cardSlideIn 0.4s ease-out forwards;
+            transform: scale(0) rotate(180deg);
+            opacity: 0;
+        }
+
+        .card-remove-animation {
+            animation: cardSlideOut 0.3s ease-in forwards;
+        }
+
+        .card-hover-pulse {
+            transition: all 0.2s ease;
+        }
+
+        .card-hover-pulse:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+        }
+
+        /* Keyframe Animations */
+        @keyframes cardSlideIn {
+            0% {
+                transform: scale(0) rotate(180deg) translateY(-20px);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1) rotate(90deg) translateY(-10px);
+                opacity: 0.7;
+            }
+            100% {
+                transform: scale(1) rotate(0deg) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes cardSlideOut {
+            0% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1) rotate(-90deg);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(0) rotate(-180deg) translateY(-20px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes counterPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .counter-pulse {
+            animation: counterPulse 0.3s ease-in-out;
+        }
+
+        /* Extra deck card animations */
+        .extra-card-add {
+            animation: extraCardSlideIn 0.5s ease-out forwards;
+            transform: translateX(-50px) scale(0);
+            opacity: 0;
+        }
+
+        .extra-card-remove {
+            animation: extraCardSlideOut 0.4s ease-in forwards;
+        }
+
+        @keyframes extraCardSlideIn {
+            0% {
+                transform: translateX(-50px) scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            60% {
+                transform: translateX(10px) scale(1.1) rotate(-90deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateX(0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes extraCardSlideOut {
+            0% {
+                transform: translateX(0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(50px) scale(0) rotate(180deg);
+                opacity: 0;
+            }
+        }
+    </style>
+
+<body class="bg-slate-900 text-gray-100 h-screen overflow-hidden">
+    <nav class="fixed top-0 left-0 right-0 bg-slate-900/90 backdrop-blur-md border-b border-blue-500/30 z-50 py-3 px-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="Homepage.HTML" class="text-blue-400 hover:text-blue-300 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Decks
+            </a>
+            <h1 id="deck-title" class="text-2xl font-bold text-blue-300 page-title cursor-pointer hover:text-blue-200 transition-colors duration-200 opacity-0" 
+                onclick="makeEditable()" title="Click to edit deck name">Loading...</h1>
+            <div class="w-28"><!-- Spacer to center the title --></div>
+        </div>
+    </nav>
+    <!-- Add spacing to push content below the fixed nav -->
+    <div class="h-16"></div>
+    <!-- Main content container with fixed height to prevent scrolling -->
+    <div class="fixed top-16 left-0 right-0 bottom-0 flex flex-col items-start justify-left p-4">
+        <!-- Background effects -->
+        <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-24 -right-24 w-96 h-96 bg-blue-700 opacity-20 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-700 opacity-20 rounded-full blur-3xl"></div>
+            <div class="absolute top-1/3 left-1/4 w-64 h-64 bg-cyan-700 opacity-10 rounded-full blur-2xl"></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 w-full px-4 animate__animated animate__fadeIn delay-300ms h-full">
+            <!-- Left div -->
+            <div class="relative z-10 p-2 backdrop-blur-md bg-slate-900/40 
+            border border-blue-500/30 rounded-lg overflow-hidden shimmer">
+            <div id="card-details" class="flex flex-col justify-center items-center h-full min-h-[450px] overflow-hidden">
+                <h2 class="text-2xl font-semibold mb-4 text-blue-300">Selected Card Details</h2>
+                </div>
+            </div>
+            
+            <!-- Middle div -->
+            <div class="relative z-10 p-6 backdrop-blur-md 
+            bg-slate-900/40 border border-blue-500/30 rounded-lg overflow-hidden shimmer">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-blue-300">Deck List</h2>
+                    <div class="bg-slate-800/60 px-3 py-1 rounded-lg border border-blue-500/30">
+                        <span class="text-blue-300 font-semibold" id="main-deck-count">0</span>
+                        <span class="text-gray-400 text-sm"> cards</span>
+                    </div>
+                </div>
+                <!-- Deck search bar -->
+                <div class="mb-2 flex gap-2">
+                    <input id="deck-search-bar" type="text" placeholder="Search in deck..." 
+                        class="w-full p-2 bg-slate-800/80 text-blue-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.2)] transition-all duration-300">
+                    <select id="deck-type-filter" name="type"
+                        class="p-2 bg-slate-800/80 text-blue-100 border border-blue-500/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-transparent">
+                        <option value="">All Types</option>
+                        <option value="Effect Monster">Effect Monster</option>
+                        <option value="Normal Monster">Normal Monster</option>
+                        <option value="Ritual Monster">Ritual Monster</option>
+                        <option value="Fusion Monster">Fusion Monster</option>
+                        <option value="Synchro Monster">Synchro Monster</option>
+                        <option value="Xyz Monster">Xyz Monster</option>
+                        <option value="Spell Card">Spell Card</option>
+                        <option value="Trap Card">Trap Card</option>
+                    </select>
+                </div>
+                <div id="deck-list" class="table-container overflow-y-auto min-h-[200px] max-h-[400px] custom-scrollbar">
+                </div>
+            </div>
+
+<!-- Right div -->
+<div class="relative z-10 p-6 backdrop-blur-md 
+bg-slate-900/40 border border-blue-500/30 rounded-lg overflow-hidden shimmer">
+    <!-- Search controls in flex container -->
+    <div class="flex space-x-4 mb-4">
+        <!-- Search input -->
+        <div class="flex-grow">
+            <input id="search-form" type="text" placeholder="Search cards..." 
+            class="w-full p-3 bg-slate-800/80 text-blue-100 
+            rounded-lg
+            focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500
+            shadow-[0_0_8px_rgba(59,130,246,0.2)]
+            hover:shadow-[0_0_12px_rgba(59,130,246,0.3)]
+            transition-all duration-300">
+        </div>
+        
+        <!-- Dropdown -->
+        <div class="w-1/3">
+            <select id="card-type" name="type" 
+class="w-full p-3 bg-slate-800/80 text-blue-100 border border-blue-500/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-transparent">
+    <option value="">All Types</option>
+    <option value="Effect Monster">Effect Monster</option>
+    <option value="Normal Monster">Normal Monster</option>
+    <option value="Ritual Monster">Ritual Monster</option>
+    <option value="Fusion Monster">Fusion Monster</option>
+    <option value="Synchro Monster">Synchro Monster</option>
+    <option value="Xyz Monster">Xyz Monster</option>
+    <option value="Spell Card">Spell Card</option>
+    <option value="Trap Card">Trap Card</option>
+</select>
+        </div>
+    </div>
+    
+    <!-- Card results container with fixed height and external scrollbar -->
+    <div class="table-container overflow-y-auto h-full custom-scrollbar">
+        <div class="text-center p-2 h-full" id="card-results">
+            
+        </div>
+    </div>
+</div>
+</div>
+        
+        <script>
+
+// Track cards in each deck
+const mainDeckCards = []; // Store card IDs
+const cardCounts = {}; // Object to track count of each card
+
+// Global variable for owned card IDs
+let ownedCardIds = [];
+
+// Fetch owned card IDs from backend and store in global variable
+async function fetchOwnedCardIds() {
+    try {
+        const { getAllDecks, getDeckCards } = await import('./js/deck-manager.js');
+        const { success, decks } = await getAllDecks();
+        if (!success) {
+            ownedCardIds = [];
+            return;
+        }
+        const ownedDeck = decks.find(deck => deck.name === "Owned Cards");
+        if (!ownedDeck) {
+            ownedCardIds = [];
+            return;
+        }
+        const { success: cardsSuccess, cards } = await getDeckCards(ownedDeck.deck_id);
+        if (!cardsSuccess) {
+            ownedCardIds = [];
+            return;
+        }
+        // Store as strings for consistency
+        ownedCardIds = cards.map(card => String(card.card_id || card.id));
+    } catch (e) {
+        ownedCardIds = [];
+        console.error(e);
+    }
+}
+
+// Function to get current deck card IDs
+async function getCurrentDeckCardIds() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const deckId = urlParams.get('id');
+    
+    if (!deckId) return [];
+    
+    try {
+        const { getDeckCards } = await import('./js/deck-manager.js');
+        const { success, cards } = await getDeckCards(deckId);
+        
+        if (success) {
+            const mainDeckCards = cards.filter(card => card.location === 'main');
+            return mainDeckCards.map(card => card.card_id);
+        }
+    } catch (error) {
+        console.error('Error getting deck card IDs:', error);
+    }
+    
+    return [];
+}
+
+// Function to update deck counters from database
+async function updateDeckCountersFromDB(deckId) {
+    try {
+        const { getDeckCards } = await import('./js/deck-manager.js');
+        const { success, cards } = await getDeckCards(deckId);
+        
+        if (success) {
+            const mainDeckCards = cards.filter(card => card.location === 'main');
+            
+            const mainDeckCountElement = document.getElementById('main-deck-count');
+            
+            if (mainDeckCountElement) {
+                mainDeckCountElement.textContent = mainDeckCards.length;
+                // Add pulse animation to show the count changed
+                mainDeckCountElement.classList.add('counter-pulse');
+                setTimeout(() => {
+                    mainDeckCountElement.classList.remove('counter-pulse');
+                }, 300);
+            }
+            
+            // Update star visibility in owned cards section
+            updateOwnedCardsStarVisibility();
+        }
+    } catch (error) {
+        console.error('Error updating deck counters:', error);
+    }
+}
+
+// Function to update star visibility in owned cards section
+function updateOwnedCardsStarVisibility() {
+    const cardElements = document.querySelectorAll('#card-results .card');
+    cardElements.forEach(cardElement => {
+        const cardId = String(cardElement.dataset.cardId);
+        const starElement = cardElement.querySelector('.absolute.top-1.right-1');
+        if (starElement) {
+            if (ownedCardIds.includes(cardId)) {
+                starElement.style.display = 'block';
+            } else {
+                starElement.style.display = 'none';
+            }
+        }
+    });
+}
+
+function displaySideDeckCards(cardType) {
+    // Check for exact card type matches or includes 
+    if (cardType && (
+      cardType.includes('Fusion') || 
+      cardType.includes('Xyz') || // Note: 'Xyz' not 'XYZ'
+      cardType.includes('Synchro') || 
+      cardType.includes('Link')
+    )) {
+      return 'extra';
+    }
+    
+    return 'main';
+  }
+
+// --- REPLACE OWNED CARDS SEARCH/RENDER LOGIC WITH DECK.HTML LOGIC ---
+
+let cardSearchOffset = 0;
+const cardSearchLimit = 100;
+let cardSearchLoading = false;
+let cardSearchAllLoaded = false;
+let lastSearchName = '';
+let lastSearchType = '';
+
+function resetCardSearchState() {
+    cardSearchOffset = 0;
+    cardSearchLoading = false;
+    cardSearchAllLoaded = false;
+}
+
+function fetchCards(append = false) {
+    const nameInput = document.getElementById('search-form');
+    const typeSelect = document.getElementById('card-type');
+    const cardResults = document.getElementById('card-results');
+    const searchName = nameInput.value || '';
+    const searchType = typeSelect.value || '';
+
+    // If search changed, reset state
+    if (searchName !== lastSearchName || searchType !== lastSearchType) {
+        resetCardSearchState();
+        lastSearchName = searchName;
+        lastSearchType = searchType;
+        if (!append) cardResults.innerHTML = '';
+    }
+
+    if (cardSearchLoading || cardSearchAllLoaded) return;
+    cardSearchLoading = true;
+
+    const params = new URLSearchParams();
+    if (searchName) params.append('name', searchName);
+    if (searchType) params.append('type', searchType);
+    params.append('limit', cardSearchLimit);
+    params.append('offset', cardSearchOffset);
+
+    // Show loading message if first load
+    if (!append && cardSearchOffset === 0) {
+        cardResults.innerHTML = '<div class="text-center p-4 text-blue-300"><p>Loading cards...</p></div>';
+    }
+
+    fetch(`/api/cards?${params.toString()}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('No cards with such name');
+            }
+            return response.json();
+        })
+        .then(cards => {
+            if (!append) {
+                cardResults.innerHTML = '<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>';
+            } else if (!cardResults.querySelector('.grid')) {
+                cardResults.innerHTML = '<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>';
+            }
+            const gridContainer = cardResults.querySelector('.grid');
+            if (!cards.length) {
+                if (!append || cardSearchOffset === 0) {
+                    cardResults.innerHTML = '<div class="text-center p-4 text-blue-300"><p>No cards found</p></div>';
+                }
+                cardSearchAllLoaded = true;
+                return;
+            }
+            // Sort cards by card_id to group identical cards together (ensure string)
+            const sortedCards = [...cards].sort((a, b) => String(a.card_id || '').localeCompare(String(b.card_id || '')));
+            sortedCards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card relative group cursor-pointer';
+                cardElement.dataset.cardId = card.card_id;
+                cardElement.innerHTML = `
+                    <div class="card-inner transform transition-transform duration-500 hover:scale-105 relative">
+                        <img src="${card.card_images[0].image_url}" alt="${card.name}" class="rounded-lg w-full hover:shadow-[0_0_20px_rgba(59,130,246,0.6)]">
+                        <div class="card-name mt-2 text-center text-blue-300 font-medium truncate">${card.name}</div>
+                        <div class="absolute top-1 right-1 text-yellow-400 text-xl pointer-events-none" style="display: ${ownedCardIds.includes(String(card.card_id)) ? 'block' : 'none'};">★</div>
+                    </div>
+                `;
+                gridContainer.appendChild(cardElement);
+                cardElement.addEventListener('click', () => {
+                    showCardDetails(card.id);
+                });
+                cardElement.addEventListener('click', () => {
+                    const sideDeck = displaySideDeckCards(card.type);
+                    addcard(card.id);
+                });
+            });
+            // If fewer than limit, all loaded
+            if (cards.length < cardSearchLimit) {
+                cardSearchAllLoaded = true;
+            } else {
+                cardSearchOffset += cardSearchLimit;
+            }
+            updateOwnedCardsStarVisibility();
+        })
+        .catch(error => {
+            console.error('Error fetching cards:', error);
+            if (!append) {
+                cardResults.innerHTML = `<div class="text-center p-4 text-red-400">
+                    <p>Error loading cards: ${error.message}</p>
+                </div>`;
+            }
+            cardSearchAllLoaded = true;
+        })
+        .finally(() => {
+            cardSearchLoading = false;
+        });
+}
+
+// Attach scroll event for infinite scroll
+function setupInfiniteScroll() {
+    const cardResults = document.getElementById('card-results');
+    cardResults.addEventListener('scroll', function() {
+        if (cardSearchLoading || cardSearchAllLoaded) return;
+        const grid = cardResults.querySelector('.grid');
+        if (!grid) return;
+        // If scrolled to bottom (with 100px buffer)
+        if (cardResults.scrollTop + cardResults.clientHeight >= cardResults.scrollHeight - 100) {
+            fetchCards(true);
+        }
+    });
+}
+
+document.getElementById("search-form").addEventListener("input", function() {
+    resetCardSearchState();
+    fetchCards(false);
+});
+document.getElementById("card-type").addEventListener("change", function() {
+    resetCardSearchState();
+    fetchCards(false);
+});
+setupInfiniteScroll();
+// Initial load
+fetchCards(false);
+
+                // Function to show card details
+                function showCardDetails(cardId) {
+                    fetch(`/api/cards/${cardId}`)
+                        .then(res => {
+                            if (!res.ok) {
+                                res.text().then(errorText => {
+                                    console.error(`Failed to fetch card details for ${cardId}. Server response:`, errorText);
+                                });
+                                return null;
+                            }
+                            return res.json();
+                        })
+                        .then(card => {
+                            if (!card) return;
+                            document.getElementById('card-details').innerHTML = `
+                                <div class="flex flex-col items-center justify-center w-full h-full">
+                                     <img src="${card.card_images[0].image_url}" alt="${card.name}" 
+                                          class="max-h-[520px] max-w-[370px] w-auto h-auto object-contain rounded-lg shadow-lg border border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.6)] mx-auto">
+                                </div>
+                            `;
+                        })
+                        .catch(error => console.error('Error fetching card details:', error));
+                }
+
+                // Function to add card to deck
+                async function addcard(cardId) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const deckId = urlParams.get('id');
+                    
+                    try {
+                        // Import the functions from deck-manager.js
+                        const { addCardToOwnedDeck } = await import('./js/deck-manager.js');
+                        
+                        // Add card to deck
+                        const response = await fetch(`/api/cards/${cardId}`);
+                        const card = await response.json();
+                        
+                        const sideDeck = displaySideDeckCards(card.type);
+                        
+                        // Save to database first
+                        let saveResult;
+                            saveResult = await addCardToOwnedDeck(deckId, cardId, 1);
+                        
+                        // Check if save was successful
+                        if (!saveResult.success) {
+                            console.error('Failed to save card to database:', saveResult.error);
+                            return;
+                        }
+                        
+                        // Update counters from database
+                        await updateDeckCountersFromDB(deckId);
+                        
+                        // Update star visibility in owned cards section
+                        await updateOwnedCardsStarVisibility();
+                        
+                           
+                            if (!document.getElementById('deck-grid')) {
+                                const deckList = document.getElementById('deck-list');
+                                deckList.innerHTML = '<div id="deck-grid" class="grid grid-cols-10 gap-0.5 px-1 py-1 w-full overflow-hidden"></div>';
+                            }
+
+                            // Then add cards to the grid with click handler included
+                            const mainCardDiv = document.createElement('div');
+                            mainCardDiv.className = "card-item box-border p-0.5 card-add-animation card-hover-pulse";
+                            mainCardDiv.style.cursor = "pointer";
+                            mainCardDiv.innerHTML = `
+                                <img src="${card.card_images[0].image_url}" alt="${card.name}" 
+                                     class="w-full h-auto max-h-20 object-contain transition-all duration-200">
+                                <div class="absolute top-1 right-1 text-yellow-400 text-xl pointer-events-none">★</div>
+                                <div class="h-1"></div>
+                            `;
+                            
+                            // Add click event directly to the element before appending
+                            mainCardDiv.onclick = function() {
+                                showCardDetails(card.id);
+                            };
+                            mainCardDiv.ondblclick = async function() {
+                                console.log('🗑️ Double-click detected on main deck card:', card.id);
+                                
+                                // Get deckId from URL parameters
+                                const urlParams = new URLSearchParams(window.location.search);
+                                const currentDeckId = urlParams.get('id');
+                                console.log('Current deck ID:', currentDeckId);
+                                
+                                if (!currentDeckId) {
+                                    console.error('No deck ID found for deletion');
+                                    return;
+                                }
+                                
+                                try {
+                                    // Import delete function
+                                    const { deleteCardFromDeck } = await import('./js/deck-manager.js');
+                                    console.log('🔧 Attempting to delete card from database...');
+                                    
+                                    // Delete from database first
+                                    const deleteResult = await deleteCardFromDeck(currentDeckId, card.id, 'main');
+                                    console.log('💾 Delete result:', deleteResult);
+                                    
+                                    if (deleteResult.success) {
+                                        console.log('✅ Card deleted from database, removing from UI');
+                                        // Update counters from database
+                                        await updateDeckCountersFromDB(currentDeckId);
+                                        // Update star visibility in owned cards section
+                                        await updateOwnedCardsStarVisibility();
+                                        // Add removal animation
+                                        this.classList.add('card-remove-animation');
+                                        // Remove from DOM after animation completes
+                                        setTimeout(() => {
+                                            this.remove();
+                                        }, 300);
+                                    } else {
+                                        console.error('❌ Failed to delete card from database:', deleteResult.error);
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Exception during card deletion:', error);
+                                }
+                            };
+                            
+                            // Append the element to the grid
+                            document.getElementById('deck-grid').appendChild(mainCardDiv);
+                    } catch (error) {
+                        console.error('Error adding card to deck:', error);
+                        alert('Error adding card to deck. Please try again.');
+                    }
+                }
+</script>
+
+<script type="module">
+    import { getCurrentUser } from './js/auth.js';
+    import { getDeckCards } from './js/deck-manager.js';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const deckId = urlParams.get('id');
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const user = await getCurrentUser();
+            if(!user){
+                window.location.href = 'Login.html';
+                return;
+            }
+
+            if (!deckId || deckId === 'null' || deckId === 'undefined') {
+                alert('No deck ID provided. Redirecting to homepage.');
+                window.location.href = 'Homepage.HTML';
+                return;
+            }
+
+            loadDeckCards(deckId);
+        } catch (error) {
+            console.error('Error loading deck:', error);
+            // If there's an error, still redirect to Homepage
+            window.location.href = 'Homepage.HTML';
+        }
+    });
+
+    async function loadDeckCards(deckId) {
+        // Add additional validation here too
+        if (!deckId || deckId === 'null' || deckId === 'undefined') {
+            console.error('Invalid deck ID passed to loadDeckCards:', deckId);
+            alert('Invalid deck ID. Redirecting to homepage.');
+            window.location.href = 'Homepage.HTML';
+            return;
+        }
+        // First get the deck info to display the name
+        try {
+            // Import supabase from auth.js
+            const { supabase } = await import('./js/auth.js');
+            // Get the deck details including name using Supabase
+            const { data: deck, error } = await supabase
+                .from('decks')
+                .select('*')
+                .eq('deck_id', deckId)
+                .single();
+            const titleElement = document.getElementById('deck-title');
+            if (!error && deck) {
+                titleElement.textContent = deck.name;
+            } else {
+                titleElement.textContent = 'My Deck';
+            }
+            titleElement.classList.remove('opacity-0');
+            titleElement.classList.add('opacity-100', 'transition-opacity', 'duration-300');
+        } catch (error) {
+            console.error('Error fetching deck details:', error);
+            // Show fallback title even if there's an error
+            const titleElement = document.getElementById('deck-title');
+            titleElement.textContent = 'My Deck';
+            titleElement.classList.remove('opacity-0');
+            titleElement.classList.add('opacity-100', 'transition-opacity', 'duration-300');
+        }
+        // Then get the cards in the deck
+        const {success, cards} = await getDeckCards(deckId);
+        if(!success) {
+            console.error('Failed to get deck cards');
+            return;
+        }
+        const mainDeckCards = cards.filter(card => card.location === 'main');
+        // Fetch full card details for all cards in the deck in parallel
+        const cardIds = mainDeckCards.map(card => card.card_id);
+        let cardDetails = [];
+        if (cardIds.length > 0) {
+            cardDetails = await Promise.all(
+                cardIds.map(id => fetch(`/api/cards/${id}`).then(res => res.json()))
+            );
+        }
+        // Store for filtering and display
+        window.currentDeckCards = cardDetails;
+        displayMainDeckCards(cardDetails);
+        // Attach event listeners here, after cards are loaded
+        const deckSearchInput = document.getElementById('deck-search-bar');
+        const deckTypeFilter = document.getElementById('deck-type-filter');
+        if (deckSearchInput && deckTypeFilter) {
+            deckSearchInput.addEventListener('input', () => {
+                displayMainDeckCards(window.currentDeckCards || []);
+            });
+            deckTypeFilter.addEventListener('change', () => {
+                displayMainDeckCards(window.currentDeckCards || []);
+            });
+        }
+        // Update counters from database
+        await updateDeckCountersFromDB(deckId);
+        
+        // Initial fetch of cards to show stars
+        fetchCards();
+    }
+
+      // Implement these functions based on your UI structure
+  function displayMainDeckCards(cards) {
+    const mainDeckContainer = document.getElementById('deck-list');
+    if (!mainDeckContainer) {
+        console.error('Main deck container not found');
+        return;
+    }
+    // Defensive check for empty or invalid cards array
+    if (!Array.isArray(cards) || cards.length === 0) {
+        mainDeckContainer.innerHTML = '<p class="text-center text-gray-400 p-4">No cards in main deck</p>';
+        return;
+    }
+    // Get search value and type filter
+    const deckSearchInput = document.getElementById('deck-search-bar');
+    const deckTypeFilter = document.getElementById('deck-type-filter');
+    let searchValue = '';
+    if (deckSearchInput) {
+        searchValue = deckSearchInput.value.trim().toLowerCase();
+    }
+    let typeValue = '';
+    if (deckTypeFilter) {
+        typeValue = deckTypeFilter.value;
+    }
+    // Filter cards by name and type
+    let filteredCards = cards;
+    if (searchValue) {
+        filteredCards = filteredCards.filter(card => (card.name || card.card_name) && (card.name || card.card_name).toLowerCase().includes(searchValue));
+    }
+    if (typeValue) {
+        filteredCards = filteredCards.filter(card => (card.type || '').toLowerCase() === typeValue.toLowerCase());
+    }
+    // Get owned card IDs from localStorage
+    let ownedCardIds = [];
+    try {
+        ownedCardIds = JSON.parse(localStorage.getItem('ownedCardIds') || '[]');
+    } catch (e) { ownedCardIds = []; }
+    if (filteredCards.length > 0) {
+        mainDeckContainer.innerHTML = '<div id="deck-grid" class="grid grid-cols-10 gap-0.5 px-1 py-1 w-full h-full items-stretch content-stretch overflow-hidden"></div>';
+        const deckGrid = document.getElementById('deck-grid');
+        filteredCards.forEach((card, index) => {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card-item box-border p-0.5 cursor-pointer card-add-animation card-hover-pulse h-full flex flex-col';
+            cardElement.innerHTML = `
+                <div class="relative w-full h-full flex flex-col">
+                    <img src="${card.card_images[0].image_url}" alt="${card.name}" 
+                        class="w-full h-full object-contain flex-grow">
+                    <div class="absolute top-1 right-1 text-yellow-400 text-xl pointer-events-none">★</div>
+                </div>
+                <div class="h-1"></div>
+            `;
+            cardElement.dataset.cardId = card.card_id;
+            cardElement.onclick = function() {
+                showCardDetails(card.id);
+            };
+            // Add double-click handler for removal
+            cardElement.ondblclick = async function() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const currentDeckId = urlParams.get('id');
+                if (!currentDeckId) {
+                    console.error('No deck ID found for deletion');
+                    return;
+                }
+                try {
+                    const { deleteCardFromDeck } = await import('./js/deck-manager.js');
+                    const deleteResult = await deleteCardFromDeck(currentDeckId, card.id, 'main');
+                    if (deleteResult.success) {
+                        // Update counters from database
+                        await updateDeckCountersFromDB(currentDeckId);
+                        // Update star visibility in owned cards section
+                        await updateOwnedCardsStarVisibility();
+                        // Add removal animation
+                        this.classList.add('card-remove-animation');
+                        // Remove from DOM after animation completes
+                        setTimeout(() => {
+                            this.remove();
+                        }, 300);
+                    } else {
+                        console.error('Failed to delete card from database:', deleteResult.error);
+                    }
+                } catch (error) {
+                    console.error('Exception during card deletion:', error);
+                }
+            };
+            deckGrid.appendChild(cardElement);
+        });
+    } else {
+        mainDeckContainer.innerHTML = '<p class="text-center text-gray-400 p-4">No cards in main deck</p>';
+    }
+  }
+
+</script>
+</body>
+</html>

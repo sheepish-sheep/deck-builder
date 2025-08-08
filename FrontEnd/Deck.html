@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Deck</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Load Supabase JS library directly -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2.38.4"></script>
+    <style>
+        /* Hide scrollbars but keep scrolling functionality */
+        html, body {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        html::-webkit-scrollbar, body::-webkit-scrollbar {
+            display: none;
+        }
+        
+        body {
+            background-color: #0f172a;
+            color: #f3f4f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+        
+        .table-container {
+            overflow: hidden;
+            border-radius: 1rem;
+            box-shadow: 0 0 30px rgba(17, 24, 39, 0.7);
+        }
+        
+        .btn-glow {
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .btn-glow::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: rotate(30deg);
+            transition: transform 0.5s;
+            z-index: -1;
+        }
+        
+        .btn-glow:hover::after {
+            transform: translateX(100%) rotate(30deg);
+        }
+        
+        .page-title {
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.5), 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .float-animation {
+            animation: float 5s ease-in-out infinite;
+        }
+        /* Custom animation delays */
+        .delay-300ms {
+            animation-delay: 0.3s;
+        }
+        
+        .delay-500ms {
+            animation-delay: 0.5s;
+        }
+        
+        .delay-700ms {
+            animation-delay: 0.7s;
+        }
+        
+        /* Custom scrollbar styles for deck builder theme */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 10px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, rgba(59, 130, 246, 0.7), rgba(37, 99, 235, 0.9));
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 1));
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
+        }
+        
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(59, 130, 246, 0.7) rgba(30, 41, 59, 0.5);
+        }
+
+        /* Card Animation Styles */
+        .card-add-animation {
+            animation: cardSlideIn 0.4s ease-out forwards;
+            transform: scale(0) rotate(180deg);
+            opacity: 0;
+        }
+
+        .card-remove-animation {
+            animation: cardSlideOut 0.3s ease-in forwards;
+        }
+
+        .card-hover-pulse {
+            transition: all 0.2s ease;
+        }
+
+        .card-hover-pulse:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+        }
+
+        /* Keyframe Animations */
+        @keyframes cardSlideIn {
+            0% {
+                transform: scale(0) rotate(180deg) translateY(-20px);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1) rotate(90deg) translateY(-10px);
+                opacity: 0.7;
+            }
+            100% {
+                transform: scale(1) rotate(0deg) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes cardSlideOut {
+            0% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1) rotate(-90deg);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(0) rotate(-180deg) translateY(-20px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes counterPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .counter-pulse {
+            animation: counterPulse 0.3s ease-in-out;
+        }
+
+        /* Extra deck card animations */
+        .extra-card-add {
+            animation: extraCardSlideIn 0.5s ease-out forwards;
+            transform: translateX(-50px) scale(0);
+            opacity: 0;
+        }
+
+        .extra-card-remove {
+            animation: extraCardSlideOut 0.4s ease-in forwards;
+        }
+
+        @keyframes extraCardSlideIn {
+            0% {
+                transform: translateX(-50px) scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            60% {
+                transform: translateX(10px) scale(1.1) rotate(-90deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateX(0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes extraCardSlideOut {
+            0% {
+                transform: translateX(0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(50px) scale(0) rotate(180deg);
+                opacity: 0;
+            }
+        }
+    </style>
+
+<body class="bg-slate-900 text-gray-100 h-screen overflow-hidden">
+    <nav class="fixed top-0 left-0 right-0 bg-slate-900/90 backdrop-blur-md border-b border-blue-500/30 z-50 py-3 px-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="Homepage.HTML" class="text-blue-400 hover:text-blue-300 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Decks
+            </a>
+            <h1 id="deck-title" class="text-2xl font-bold text-blue-300 page-title cursor-pointer hover:text-blue-200 transition-colors duration-200 opacity-0" 
+                onclick="makeEditable()" title="Click to edit deck name">Loading...</h1>
+            <div class="flex items-center gap-2">
+                <div class="w-10"></div>
+            </div>
+        </div>
+    </nav>
+    <!-- Add spacing to push content below the fixed nav -->
+    <div class="h-16"></div>
+    <div class="fixed top-16 left-0 right-0 bottom-0 p-4 h-[calc(100vh-4rem)]">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2 w-full h-full px-4 min-h-0 grid-rows-[1fr_auto]">
+        <!-- Left column: spans both rows -->
+        <div class="row-span-2 relative z-10 p-2 backdrop-blur-md bg-slate-900/40 border border-blue-500/30 rounded-lg overflow-hidden shimmer flex flex-col justify-center items-center h-full min-h-0">
+          <div id="card-details" class="flex flex-col justify-center items-center h-full min-h-[450px] overflow-hidden">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-300">Selected Card Details</h2>
+          </div>
+        </div>
+        <!-- Middle column: Deck List (top row) -->
+        <div class="relative z-10 p-6 backdrop-blur-md bg-slate-900/40 border border-blue-500/30 rounded-lg overflow-hidden shimmer flex flex-col min-h-0">
+          <div class="flex justify-between items-center mb-4">
+              <h2 class="text-2xl font-semibold text-blue-300">Deck List</h2>
+              <div class="bg-slate-800/60 px-3 py-1 rounded-lg border border-blue-500/30">
+                  <span class="text-blue-300 font-semibold" id="main-deck-count">0</span>
+                  <span class="text-gray-400 text-sm"> cards</span>
+              </div>
+          </div>
+          <div id="deck-list" class="table-container overflow-x-auto min-h-[400px] flex-1 min-h-0">
+          </div>
+        </div>
+        <!-- Right column: Card Search (top row) -->
+        <div class="relative z-10 p-6 backdrop-blur-md bg-slate-900/40 border border-blue-500/30 rounded-lg overflow-hidden shimmer">
+          <div class="flex space-x-4 mb-4">
+              <div class="flex-grow">
+                  <input id="search-form" type="text" placeholder="Search cards..." class="w-full p-3 bg-slate-800/80 text-blue-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.2)] hover:shadow-[0_0_12px_rgba(59,130,246,0.3)] transition-all duration-300">
+              </div>
+              <div class="w-1/3">
+                  <select id="card-type" name="type" class="w-full p-3 bg-slate-800/80 text-blue-100 border border-blue-500/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-transparent">
+                      <option value="">All Types</option>
+                      <option value="Effect Monster">Effect Monster</option>
+                      <option value="Normal Monster">Normal Monster</option>
+                      <option value="Ritual Monster">Ritual Monster</option>
+                      <option value="Fusion Monster">Fusion Monster</option>
+                      <option value="Synchro Monster">Synchro Monster</option>
+                      <option value="Xyz Monster">Xyz Monster</option>
+                      <option value="Spell Card">Spell Card</option>
+                      <option value="Trap Card">Trap Card</option>
+                  </select>
+              </div>
+          </div>
+          <div class="table-container overflow-y-auto h-[380px] custom-scrollbar">
+              <div class="text-center p-2" id="card-results"></div>
+          </div>
+        </div>
+        <!-- Bottom row: Extra Deck spans middle and right columns -->
+        <div class="md:col-span-2 mt-2 py-2 px-2 backdrop-blur-md bg-slate-900/40 border border-blue-500/30 rounded-lg shimmer flex flex-col justify-end" style="max-width:100%">
+            <div class="flex justify-between items-center mb-1">
+                <h2 class="text-sm font-semibold text-blue-300">Extra Deck</h2>
+                <div class="bg-slate-800/60 px-2 py-0.5 rounded border border-blue-500/30">
+                    <span class="text-blue-300 font-semibold text-xs" id="extra-deck-count">0</span>
+                    <span class="text-gray-400 text-xs"> cards</span>
+                </div>
+            </div>
+            <div id="extra-deck-list" style="height:85px; padding:2px; margin:0; width:100%; overflow:hidden;"></div>
+        </div>
+      </div>
+    </div>
+</div>
+    <script>
+
+// Track cards in each deck
+const mainDeckCards = []; // Store card IDs
+const extraDeckCards = []; // Store card IDs
+const cardCounts = {}; // Object to track count of each card
+
+// Function to update deck counters from database
+async function updateDeckCountersFromDB(deckId) {
+    try {
+        const { getDeckCards } = await import('./js/deck-manager.js');
+        const { success, cards } = await getDeckCards(deckId);
+        if (success) {
+            const mainDeckCards = cards.filter(card => card.location === 'main');
+            const extraDeckCards = cards.filter(card => card.location === 'extra');
+            const mainDeckCountElement = document.getElementById('main-deck-count');
+            const extraDeckCountElement = document.getElementById('extra-deck-count');
+            if (mainDeckCountElement) {
+                mainDeckCountElement.textContent = mainDeckCards.length;
+                mainDeckCountElement.classList.add('counter-pulse');
+                setTimeout(() => {
+                    mainDeckCountElement.classList.remove('counter-pulse');
+                }, 300);
+            }
+            if (extraDeckCountElement) {
+                extraDeckCountElement.textContent = extraDeckCards.length;
+                extraDeckCountElement.classList.add('counter-pulse');
+                setTimeout(() => {
+                    extraDeckCountElement.classList.remove('counter-pulse');
+                }, 300);
+            }
+        }
+    } catch (error) {
+        console.error('Error updating deck counters:', error);
+    }
+}
+
+// Function to make deck name editable
+function makeEditable() {
+    const titleElement = document.getElementById('deck-title');
+    const currentName = titleElement.textContent;
+    
+    // Create input element
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentName;
+    input.className = 'text-2xl font-bold text-blue-300 bg-transparent border-b-2 border-blue-400 focus:outline-none focus:border-blue-300 max-w-xs';
+    
+    // Replace the title with input
+    titleElement.innerHTML = '';
+    titleElement.appendChild(input);
+    input.focus();
+    input.select();
+    
+    // Save on Enter or blur
+    const saveEdit = async () => {
+        const newName = input.value.trim();
+        if (newName && newName !== currentName) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const deckId = urlParams.get('id');
+            
+            try {
+                // Import the updateDeckName function
+                const { updateDeckName } = await import('./js/deck-manager.js');
+                
+                // Update deck name in database
+                const result = await updateDeckName(deckId, newName);
+                
+                if (result.success) {
+                    titleElement.textContent = newName;
+                    titleElement.onclick = makeEditable;
+                } else {
+                    console.error('Failed to update deck name:', result.error);
+                    titleElement.textContent = currentName;
+                    titleElement.onclick = makeEditable;
+                    alert('Failed to update deck name: ' + (result.error?.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error updating deck name:', error);
+                titleElement.textContent = currentName;
+                titleElement.onclick = makeEditable;
+                alert('Error updating deck name. Please try again.');
+            }
+        } else {
+            // Restore original name if no change or empty
+            titleElement.textContent = currentName;
+            titleElement.onclick = makeEditable;
+        }
+    };
+    
+    input.addEventListener('blur', saveEdit);
+    input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            input.blur();
+        } else if (e.key === 'Escape') {
+            titleElement.textContent = currentName;
+            titleElement.onclick = makeEditable;
+        }
+    });
+}
+
+function displaySideDeckCards(cardType) {
+    // Check for exact card type matches or includes 
+    if (cardType && (
+      cardType.includes('Fusion') || 
+      cardType.includes('Xyz') || // Note: 'Xyz' not 'XYZ'
+      cardType.includes('Synchro') || 
+      cardType.includes('Link')
+    )) {
+      return 'extra';
+    }
+    
+    return 'main';
+  }
+
+let cardSearchOffset = 0;
+const cardSearchLimit = 100;
+let cardSearchLoading = false;
+let cardSearchAllLoaded = false;
+let lastSearchName = '';
+let lastSearchType = '';
+
+function resetCardSearchState() {
+    cardSearchOffset = 0;
+    cardSearchLoading = false;
+    cardSearchAllLoaded = false;
+}
+
+function fetchCards(append = false) {
+    const nameInput = document.getElementById('search-form');
+    const typeSelect = document.getElementById('card-type');
+    const cardResults = document.getElementById('card-results');
+    const searchName = nameInput.value || '';
+    const searchType = typeSelect.value || '';
+
+    // If search changed, reset state
+    if (searchName !== lastSearchName || searchType !== lastSearchType) {
+        resetCardSearchState();
+        lastSearchName = searchName;
+        lastSearchType = searchType;
+        if (!append) cardResults.innerHTML = '';
+    }
+
+    if (cardSearchLoading || cardSearchAllLoaded) return;
+    cardSearchLoading = true;
+
+    const params = new URLSearchParams();
+    if (searchName) params.append('name', searchName);
+    if (searchType) params.append('type', searchType);
+    params.append('limit', cardSearchLimit);
+    params.append('offset', cardSearchOffset);
+
+    // Show loading message if first load
+    if (!append && cardSearchOffset === 0) {
+        cardResults.innerHTML = '<div class="text-center p-4 text-blue-300"><p>Loading cards...</p></div>';
+    }
+
+    fetch(`/api/cards?${params.toString()}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('No cards with such name');
+            }
+            return response.json();
+        })
+        .then(cards => {
+            if (!append) {
+                cardResults.innerHTML = '<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>';
+            } else if (!cardResults.querySelector('.grid')) {
+                cardResults.innerHTML = '<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>';
+            }
+            const gridContainer = cardResults.querySelector('.grid');
+            if (!cards.length) {
+                if (!append || cardSearchOffset === 0) {
+                    cardResults.innerHTML = '<div class="text-center p-4 text-blue-300"><p>No cards found</p></div>';
+                }
+                cardSearchAllLoaded = true;
+                updateOwnedStars(); // Always call after rendering search results
+                // Debug: Check that deck-list is not being cleared
+                console.log('Deck List HTML after search (should not change):', document.getElementById('deck-list').innerHTML);
+                return;
+            }
+            // Sort cards by card_id to group identical cards together (ensure string)
+            const sortedCards = [...cards].sort((a, b) => String(a.card_id || '').localeCompare(String(b.card_id || '')));
+            sortedCards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card relative group cursor-pointer';
+                cardElement.dataset.cardId = card.card_id || card.id;
+                cardElement.innerHTML = `
+                    <div class="card-inner transform transition-transform duration-500 hover:scale-105">
+                        <img src="${card.card_images[0].image_url}" alt="${card.name}" class="rounded-lg w-full hover:shadow-[0_0_20px_rgba(59,130,246,0.6)]">
+                    </div>
+                `;
+                gridContainer.appendChild(cardElement);
+                cardElement.addEventListener('click', () => {
+                    showCardDetails(card.id);
+                });
+                cardElement.addEventListener('click', () => {
+                    const sideDeck = displaySideDeckCards(card.type);
+                    addcard(card.id);
+                });
+            });
+            // If fewer than limit, all loaded
+            if (cards.length < cardSearchLimit) {
+                cardSearchAllLoaded = true;
+            } else {
+                cardSearchOffset += cardSearchLimit;
+            }
+            updateOwnedStars(); // Always call after rendering search results
+            // Debug: Check that deck-list is not being cleared
+            console.log('Deck List HTML after search (should not change):', document.getElementById('deck-list').innerHTML);
+        })
+        .catch(error => {
+            console.error('Error fetching cards:', error);
+            if (!append) {
+                cardResults.innerHTML = `<div class="text-center p-4 text-red-400">
+                    <p>Error loading cards: ${error.message}</p>
+                </div>`;
+            }
+            cardSearchAllLoaded = true;
+            updateOwnedStars(); // Always call after error
+            // Debug: Check that deck-list is not being cleared
+            console.log('Deck List HTML after search (should not change):', document.getElementById('deck-list').innerHTML);
+        })
+        .finally(() => {
+            cardSearchLoading = false;
+        });
+}
+
+// Attach scroll event for infinite scroll
+function setupInfiniteScroll() {
+    const cardResults = document.getElementById('card-results');
+    cardResults.addEventListener('scroll', function() {
+        if (cardSearchLoading || cardSearchAllLoaded) return;
+        const grid = cardResults.querySelector('.grid');
+        if (!grid) return;
+        // If scrolled to bottom (with 100px buffer)
+        if (cardResults.scrollTop + cardResults.clientHeight >= cardResults.scrollHeight - 100) {
+            fetchCards(true);
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById("search-form").addEventListener("input", function() {
+        resetCardSearchState();
+        fetchCards(false);
+    });
+    document.getElementById("card-type").addEventListener("change", function() {
+        resetCardSearchState();
+        fetchCards(false);
+    });
+    setupInfiniteScroll();
+    // Initial load
+    fetchCards(false);
+});
+
+                // Function to show card details
+                function showCardDetails(cardId) {
+                    fetch(`/api/cards/${cardId}`)
+                        .then(res => {
+                            if (!res.ok) {
+                                res.text().then(errorText => {
+                                    console.error(`Failed to fetch card details for ${cardId}. Server response:`, errorText);
+                                });
+                                return null;
+                            }
+                            return res.json();
+                        })
+                        .then(card => {
+                            if (!card) return;
+                            document.getElementById('card-details').innerHTML = `
+                                <div class="flex flex-col items-center justify-center w-full h-full">
+                                     <img src="${card.card_images[0].image_url}" alt="${card.name}" 
+                                          class="max-h-[520px] max-w-[370px] w-auto h-auto object-contain rounded-lg shadow-lg border border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.6)] mx-auto">
+                                </div>
+                            `;
+                        })
+                        .catch(error => console.error('Error fetching card details:', error));
+                }
+
+                // Function to add card to deck
+                async function addcard(cardId) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const deckId = urlParams.get('id');
+                    
+                    try {
+                        // Import the functions from deck-manager.js
+                        const { addCardToMainDeck, addCardToExtraDeck } = await import('./js/deck-manager.js');
+                        
+                        // Add card to deck
+                        const response = await fetch(`/api/cards/${cardId}`);
+                        const card = await response.json();
+                        
+                        const sideDeck = displaySideDeckCards(card.type);
+                        
+                        // Save to database first
+                        let saveResult;
+                        if(sideDeck == 'extra'){
+                            saveResult = await addCardToExtraDeck(deckId, cardId, 1);
+                        } else if(sideDeck === 'main'){
+                            saveResult = await addCardToMainDeck(deckId, cardId, 1);
+                        }
+                        
+                        // Check if save was successful
+                        if (!saveResult.success) {
+                            console.error('Failed to save card to database:', saveResult.error);
+                            return;
+                        }
+                        
+                        // Update counters from database
+                        updateDeckCountersFromDB(deckId).then(() => {
+                            // Now update the UI
+                            if(sideDeck == 'extra'){
+                                if (!document.getElementById('extra-grid')) {
+                                    const deckList = document.getElementById('extra-deck-list');
+                                    deckList.innerHTML = '<div id="extra-grid" style="display:flex; flex-wrap:wrap; gap:0; width:100%; justify-content:flex-start;"></div>';
+                                }
+                                const extraCardDiv = document.createElement('div');
+                                extraCardDiv.className = "extra-card-add card-hover-pulse";
+                                extraCardDiv.style = "width:45px; height:65px; margin-right:3px; margin-bottom:3px; cursor:pointer; position:relative;";
+                                extraCardDiv.innerHTML = `
+                                    <div class="relative w-full h-full flex flex-col">
+                                        <img src="${card.card_images[0].image_url}" alt="${card.name}" style="width:45px; height:65px; object-fit:contain; transition: all 0.2s ease;">
+                                    </div>
+                                `;
+                                extraCardDiv.onclick = function() {
+                                    showCardDetails(card.id);
+                                };
+                                // Add the double-click handler right after
+                                extraCardDiv.ondblclick = function() {
+                                    // Remove from array
+                                    const index = extraDeckCards.indexOf(card.id);
+                                    if (index > -1) {
+                                        extraDeckCards.splice(index, 1);
+                                    }
+        
+                                    // Decrement count
+                                    if (cardCounts[card.id] > 0) {
+                                        cardCounts[card.id]--;
+                                    }
+        
+                                    // Add removal animation
+                                    this.classList.add('extra-card-remove');
+                                    // Remove from DOM after animation
+                                    setTimeout(() => {
+                                        this.remove();
+                                    }, 400);
+                                };
+                                // Append the element to the grid
+                                document.getElementById('extra-grid').appendChild(extraCardDiv);
+                            }
+                            else if(sideDeck === 'main'){
+                                // First, make sure there's a grid container if not already there
+                                if (!document.getElementById('deck-grid')) {
+                                    const deckList = document.getElementById('deck-list');
+                                    deckList.innerHTML = '<div id="deck-grid" class="grid grid-cols-10 gap-0.5 px-1 py-1 w-full overflow-hidden"></div>';
+                                }
+
+                                // Then add cards to the grid with click handler included
+                                const mainCardDiv = document.createElement('div');
+                                mainCardDiv.className = "card-item box-border p-0.5 card-add-animation card-hover-pulse";
+                                mainCardDiv.style.cursor = "pointer";
+                                mainCardDiv.innerHTML = `
+                                    <div class="relative">
+                                        <img src="${card.card_images[0].image_url}" alt="${card.name}" 
+                                             class="w-full h-auto max-h-20 object-contain transition-all duration-200">
+                                    </div>
+                                `;
+                                
+                                // Add click event directly to the element before appending
+                                mainCardDiv.onclick = function() {
+                                    showCardDetails(card.id);
+                                };
+                                mainCardDiv.ondblclick = function() {
+                                    const urlParams = new URLSearchParams(window.location.search);
+                                    const currentDeckId = urlParams.get('id');
+                                    if (!currentDeckId) {
+                                        console.error('No deck ID found for deletion');
+                                        return;
+                                    }
+                                    import('./js/deck-manager.js').then(({ deleteCardFromDeck }) => {
+                                        deleteCardFromDeck(currentDeckId, card.id, 'main').then(deleteResult => {
+                                            if (deleteResult.success) {
+                                                updateDeckCountersFromDB(currentDeckId).then(() => {
+                                                    this.classList.add('card-remove-animation');
+                                                    setTimeout(() => {
+                                                        this.remove();
+                                                    }, 300);
+                                                });
+                                            } else {
+                                                console.error('Failed to delete card from database:', deleteResult.error);
+                                            }
+                                        }).catch(error => {
+                                            console.error('Exception during card deletion:', error);
+                                        });
+                                    });
+                                };
+                                
+                                // Append the element to the grid
+                                document.getElementById('deck-grid').appendChild(mainCardDiv);
+                            }
+                        });
+                    } catch (error) {
+                        console.error('Error adding card to deck:', error);
+                        alert('Error adding card to deck. Please try again.');
+                    }
+                }
+
+// --- Deck List Rendering ---
+// In your displayMainDeckCards function, ensure each card element has both 'card' and 'card-item' classes and data-card-id set
+function displayMainDeckCards(cards) {
+    const mainDeckContainer = document.getElementById('deck-list');
+    if (!mainDeckContainer) {
+        console.error('Main deck container not found');
+        return;
+    }
+    if (cards.length > 0) {
+        mainDeckContainer.innerHTML = '<div id="deck-grid" class="grid grid-cols-10 gap-0.5 px-1 py-1 w-full overflow-hidden"></div>';
+        const deckGrid = document.getElementById('deck-grid');
+
+        // 1. Group cards by card_id
+        const cardGroups = {};
+        cards.forEach(card => {
+            const id = card.card_id;
+            if (!cardGroups[id]) cardGroups[id] = [];
+            cardGroups[id].push(card);
+        });
+
+        // 2. Fetch card details for each group (one fetch per unique card_id)
+        const groupEntries = Object.entries(cardGroups);
+        Promise.all(groupEntries.map(([id, group]) =>
+            fetch(`/api/cards/${id}`)
+                .then(res => res.ok ? res.json() : null)
+                .then(cardData => ({ id, group, cardData }))
+        )).then(cardGroupObjs => {
+            // 3. Sort groups by card name
+            cardGroupObjs.sort((a, b) => {
+                const nameA = a.cardData?.name || '';
+                const nameB = b.cardData?.name || '';
+                return nameA.localeCompare(nameB);
+            });
+            // 4. Flatten the groups and render
+            cardGroupObjs.forEach(({ group, cardData }) => {
+                group.forEach(card => {
+                    console.log('Rendering card:', card); // Debug: show card object
+                    // Use both 'card' and 'card-item' classes for deck list
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'card card-item relative group cursor-pointer';
+                    cardElement.innerHTML = `
+                        <div class="card-inner transform transition-transform duration-500 hover:scale-105">
+                            <img src="${cardData.card_images[0].image_url}" alt="${cardData.name}" class="rounded-lg w-full hover:shadow-[0_0_20px_rgba(59,130,246,0.6)]">
+                        </div>
+                    `;
+                    cardElement.dataset.cardId = card.card_id || card.id;
+                    console.log('Set data-card-id:', cardElement.dataset.cardId); // Debug: confirm attribute
+                    cardElement.onclick = function() {
+                        showCardDetails(card.card_id || card.id);
+                    };
+                    // Add double-click handler for removal
+                    cardElement.ondblclick = function() {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const currentDeckId = urlParams.get('id');
+                        if (!currentDeckId) {
+                            console.error('No deck ID found for deletion');
+                            return;
+                        }
+                        import('./js/deck-manager.js').then(({ deleteCardFromDeck }) => {
+                            deleteCardFromDeck(currentDeckId, card.card_id || card.id, 'main').then(deleteResult => {
+                                if (deleteResult.success) {
+                                    updateDeckCountersFromDB(currentDeckId).then(() => {
+                                        this.classList.add('card-remove-animation');
+                                        setTimeout(() => {
+                                            this.remove();
+                                        }, 300);
+                                    });
+                                } else {
+                                    console.error('Failed to delete card from database:', deleteResult.error);
+                                }
+                            }).catch(error => {
+                                console.error('Exception during card deletion:', error);
+                            });
+                        });
+                    };
+                    deckGrid.appendChild(cardElement);
+                });
+            });
+            updateOwnedStars(); // Always call after rendering deck list
+        });
+    } else {
+        mainDeckContainer.innerHTML = '<p class="text-center text-gray-400 p-4">No cards in main deck</p>';
+        updateOwnedStars(); // Also call if deck is empty
+    }
+}
+
+// --- updateOwnedStars function ---
+// This function will star every card in both deck list and search results if it is owned
+function updateOwnedStars() {
+    console.log("updateOwnedStars called");
+    // Deck List stars
+    document.querySelectorAll('#deck-list .card[data-card-id], #deck-list .card-item[data-card-id]').forEach(cardElement => {
+        const cardId = String(cardElement.dataset.cardId); // force to string
+        const isOwned = ownedCardIds.map(String).includes(cardId); // compare as string
+        let star = cardElement.querySelector('.owned-star');
+        if (star) star.remove();
+        if (isOwned) {
+            star = document.createElement('div');
+            star.className = 'owned-star absolute top-1 right-1 text-yellow-400 text-xl pointer-events-none';
+            star.innerHTML = '★';
+            cardElement.appendChild(star);
+        }
+    });
+
+    // Search Results stars
+    document.querySelectorAll('#card-results .card[data-card-id], #card-results .card-item[data-card-id]').forEach(cardElement => {
+        const cardId = String(cardElement.dataset.cardId);
+        const isOwned = ownedCardIds.map(String).includes(cardId);
+        let star = cardElement.querySelector('.owned-star');
+        if (star) star.remove();
+        if (isOwned) {
+            star = document.createElement('div');
+            star.className = 'owned-star absolute top-1 right-1 text-yellow-400 text-xl pointer-events-none';
+            star.innerHTML = '★';
+            cardElement.appendChild(star);
+        }
+    });
+}
+
+// Only declare ownedCardIds once at the top level
+let ownedCardIds = ['89631139']; // For testing, Blue-Eyes should show a star
+
+async function fetchOwnedCardIds() {
+    try {
+        const { getAllDecks, getDeckCards } = await import('./js/deck-manager.js');
+        const { success, decks } = await getAllDecks();
+        console.log('All decks:', decks); // Debug log
+        if (!success) {
+            ownedCardIds = [];
+            return;
+        }
+        const ownedDeck = decks.find(deck => deck.name === "Owned Cards");
+        console.log('Owned deck:', ownedDeck); // Debug log
+        if (!ownedDeck) {
+            ownedCardIds = [];
+            return;
+        }
+        const { success: cardsSuccess, cards } = await getDeckCards(ownedDeck.deck_id);
+        console.log('Owned deck cards:', cards); // Debug log
+        if (!cardsSuccess) {
+            ownedCardIds = [];
+            return;
+        }
+        ownedCardIds = cards.map(card => card.card_id || card.id);
+        console.log('Populated ownedCardIds:', ownedCardIds); // Debug log
+    } catch (e) {
+        ownedCardIds = [];
+        console.error(e);
+    }
+}
+
+// After rendering deck list cards, call updateOwnedStars()
+// Example: in your displayMainDeckCards or similar function, after appending all cards:
+// updateOwnedStars();
+
+// After rendering search results, call updateOwnedStars()
+// Example: in your fetchCards or similar function, after appending all cards:
+// updateOwnedStars();
+  
+</script>
+
+<script type="module">
+    import { getCurrentUser } from './js/auth.js';
+    import { getDeckCards } from './js/deck-manager.js';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const deckId = urlParams.get('id');
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const user = await getCurrentUser();
+            if(!user){
+                window.location.href = 'Login.html';
+                return;
+            }
+
+            if (!deckId || deckId === 'null' || deckId === 'undefined') {
+                alert('No deck ID provided. Redirecting to homepage.');
+                window.location.href = 'Homepage.HTML';
+                return;
+            }
+
+            loadDeckCards(deckId);
+        } catch (error) {
+            console.error('Error loading deck:', error);
+            // If there's an error, still redirect to Homepage
+            window.location.href = 'Homepage.HTML';
+        }
+    });
+
+    async function loadDeckCards(deckId) {
+        // Add additional validation here too
+        if (!deckId || deckId === 'null' || deckId === 'undefined') {
+            console.error('Invalid deck ID passed to loadDeckCards:', deckId);
+            alert('Invalid deck ID. Redirecting to homepage.');
+            window.location.href = 'Homepage.HTML';
+            return;
+        }
+        
+        // First get the deck info to display the name
+        try {
+            // Import supabase from auth.js
+            const { supabase } = await import('./js/auth.js');
+            
+            // Get the deck details including name using Supabase
+            const { data: deck, error } = await supabase
+                .from('decks')
+                .select('*')
+                .eq('deck_id', deckId)
+                .single();
+            
+            const titleElement = document.getElementById('deck-title');
+            if (!error && deck) {
+                titleElement.textContent = deck.name;
+            } else {
+                titleElement.textContent = 'My Deck';
+            }
+            titleElement.classList.remove('opacity-0');
+            titleElement.classList.add('opacity-100', 'transition-opacity', 'duration-300');
+        } catch (error) {
+            console.error('Error fetching deck details:', error);
+            // Show fallback title even if there's an error
+            const titleElement = document.getElementById('deck-title');
+            titleElement.textContent = 'My Deck';
+            titleElement.classList.remove('opacity-0');
+            titleElement.classList.add('opacity-100', 'transition-opacity', 'duration-300');
+        }
+        
+        // Ensure ownedCardIds is up to date before rendering
+        await fetchOwnedCardIds();
+
+        // Then get the cards in the deck
+        const {success, cards} = await getDeckCards(deckId);
+        if(!success) {
+            console.error('Failed to get deck cards');
+            return;
+        }
+
+        console.log('Loaded deck cards:', cards);
+        const mainDeckCards = cards.filter(card => card.location === 'main');
+        const extraDeckCards = cards.filter(card => card.location === 'extra');
+        
+        console.log('Main deck cards:', mainDeckCards);
+        console.log('Extra deck cards:', extraDeckCards);
+
+        displayMainDeckCards(mainDeckCards);
+        displayExtraDeckCards(extraDeckCards);
+        
+        // Update counters from database
+        updateDeckCountersFromDB(deckId);
+    }
+
+  // Implement these functions based on your UI structure
+function displayMainDeckCards(cards) {
+    const mainDeckContainer = document.getElementById('deck-list');
+    if (!mainDeckContainer) {
+        console.error('Main deck container not found');
+        return;
+    }
+    if (cards.length > 0) {
+        mainDeckContainer.innerHTML = '<div id="deck-grid" class="grid grid-cols-10 gap-0.5 px-1 py-1 w-full overflow-hidden"></div>';
+        const deckGrid = document.getElementById('deck-grid');
+
+        // 1. Group cards by card_id
+        const cardGroups = {};
+        cards.forEach(card => {
+            const id = card.card_id;
+            if (!cardGroups[id]) cardGroups[id] = [];
+            cardGroups[id].push(card);
+        });
+
+        // 2. Fetch card details for each group (one fetch per unique card_id)
+        const groupEntries = Object.entries(cardGroups);
+        Promise.all(groupEntries.map(([id, group]) =>
+            fetch(`/api/cards/${id}`)
+                .then(res => res.ok ? res.json() : null)
+                .then(cardData => ({ id, group, cardData }))
+        )).then(cardGroupObjs => {
+            // 3. Sort groups by card name
+            cardGroupObjs.sort((a, b) => {
+                const nameA = a.cardData?.name || '';
+                const nameB = b.cardData?.name || '';
+                return nameA.localeCompare(nameB);
+            });
+            // 4. Flatten the groups and render
+            cardGroupObjs.forEach(({ group, cardData }) => {
+                group.forEach(card => {
+                    console.log('Rendering card:', card); // Debug: show card object
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'card card-item box-border p-0.5 cursor-pointer card-add-animation card-hover-pulse';
+                    cardElement.innerHTML = `
+                        <div class="relative">
+                            <img src="${cardData.card_images[0].image_url}" alt="${cardData.name}" class="w-full h-auto max-h-20 object-contain transition-all duration-200">
+                        </div>
+                    `;
+                    cardElement.dataset.cardId = card.card_id || card.id;
+                    // Add star directly if owned
+                    if (ownedCardIds.includes(String(card.card_id || card.id))) {
+                        const star = document.createElement('div');
+                        star.className = 'owned-star absolute top-1 right-1 text-yellow-400 text-xl pointer-events-none';
+                        star.innerHTML = '★';
+                        cardElement.appendChild(star);
+                    }
+                    cardElement.onclick = function() {
+                        showCardDetails(card.card_id || card.id);
+                    };
+                    // Add double-click handler for removal
+                    cardElement.ondblclick = function() {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const currentDeckId = urlParams.get('id');
+                        if (!currentDeckId) {
+                            console.error('No deck ID found for deletion');
+                            return;
+                        }
+                        import('./js/deck-manager.js').then(({ deleteCardFromDeck }) => {
+                            deleteCardFromDeck(currentDeckId, card.card_id || card.id, 'main').then(deleteResult => {
+                                if (deleteResult.success) {
+                                    updateDeckCountersFromDB(currentDeckId).then(() => {
+                                        this.classList.add('card-remove-animation');
+                                        setTimeout(() => {
+                                            this.remove();
+                                        }, 300);
+                                    });
+                                } else {
+                                    console.error('Failed to delete card from database:', deleteResult.error);
+                                }
+                            }).catch(error => {
+                                console.error('Exception during card deletion:', error);
+                            });
+                        });
+                    };
+                    deckGrid.appendChild(cardElement);
+                });
+            });
+            updateOwnedStars(); // <--- ADDED HERE
+        });
+    } else {
+        mainDeckContainer.innerHTML = '<p class="text-center text-gray-400 p-4">No cards in main deck</p>';
+        updateOwnedStars(); // <--- ADDED HERE
+    }
+}
+
+function displayExtraDeckCards(cards) {
+    const extraDeckContainer = document.getElementById('extra-deck-list');
+    if (!extraDeckContainer) {
+        console.error('Extra deck container not found');
+        return;
+    }
+    if (cards.length > 0) {
+        extraDeckContainer.innerHTML = '<div id="extra-grid" style="display:flex; flex-wrap:wrap; gap:0; width:100%; justify-content:flex-start;"></div>';
+        const extraGrid = document.getElementById('extra-grid');
+
+        // 1. Group cards by card_id
+        const cardGroups = {};
+        cards.forEach(card => {
+            const id = card.card_id;
+            if (!cardGroups[id]) cardGroups[id] = [];
+            cardGroups[id].push(card);
+        });
+
+        // 2. Fetch card details for each group (one fetch per unique card_id)
+        const groupEntries = Object.entries(cardGroups);
+        Promise.all(groupEntries.map(([id, group]) =>
+            fetch(`/api/cards/${id}`)
+                .then(res => res.ok ? res.json() : null)
+                .then(cardData => ({ id, group, cardData }))
+        )).then(cardGroupObjs => {
+            // 3. Sort groups by card name
+            cardGroupObjs.sort((a, b) => {
+                const nameA = a.cardData?.name || '';
+                const nameB = b.cardData?.name || '';
+                return nameA.localeCompare(nameB);
+            });
+            // 4. Flatten the groups and render
+            cardGroupObjs.forEach(({ group, cardData }) => {
+                group.forEach(card => {
+                    const cardElement = document.createElement('div');
+                    cardElement.className = "extra-card-add card-hover-pulse";
+                    cardElement.style = "width:45px; height:65px; margin-right:3px; margin-bottom:3px; cursor:pointer; position:relative;";
+                    cardElement.innerHTML = `
+                        <div class="relative w-full h-full flex flex-col">
+                            <img src="${cardData.card_images[0].image_url}" alt="${cardData.name}" style="width:45px; height:65px; object-fit:contain; transition: all 0.2s ease;">
+                        </div>
+                    `;
+                    cardElement.dataset.cardId = card.card_id || card.id;
+                    // Debug log
+                    console.log('Extra deck card:', card.card_id || card.id, 'Owned:', ownedCardIds);
+                    // Add star directly to the inner .relative div if owned (force string comparison)
+                    const innerDiv = cardElement.querySelector('.relative');
+                    if (innerDiv && ownedCardIds.map(String).includes(String(card.card_id || card.id))) {
+                        const star = document.createElement('div');
+                        star.className = 'owned-star absolute top-1 right-1 text-yellow-400 text-xl pointer-events-none';
+                        star.innerHTML = '★';
+                        innerDiv.appendChild(star);
+                    }
+                    cardElement.onclick = function() {
+                        showCardDetails(card.card_id);
+                    };
+                    // Add double-click handler for removal
+                    cardElement.ondblclick = function() {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const currentDeckId = urlParams.get('id');
+                        if (!currentDeckId) {
+                            console.error('No deck ID found for deletion');
+                            return;
+                        }
+                        import('./js/deck-manager.js').then(({ deleteCardFromDeck }) => {
+                            deleteCardFromDeck(currentDeckId, card.card_id, 'extra').then(deleteResult => {
+                                if (deleteResult.success) {
+                                    updateDeckCountersFromDB(currentDeckId).then(() => {
+                                        this.classList.add('extra-card-remove');
+                                        setTimeout(() => {
+                                            this.remove();
+                                        }, 400);
+                                    });
+                                } else {
+                                    console.error('Failed to delete card from database:', deleteResult.error);
+                                }
+                            }).catch(error => {
+                                console.error('Exception during card deletion:', error);
+                            });
+                        });
+                    };
+                    extraGrid.appendChild(cardElement);
+                });
+            });
+            updateOwnedStars(); // <--- ADDED HERE
+        });
+    } else {
+        extraDeckContainer.innerHTML = '<p class="text-center text-gray-400 text-xs p-2">No cards in extra deck</p>';
+        updateOwnedStars(); // <--- ADDED HERE
+    }
+}
+
+
+
+
+async function fetchOwnedCardIds() {
+    try {
+        const { getAllDecks, getDeckCards } = await import('./js/deck-manager.js');
+        const { success, decks } = await getAllDecks();
+        if (!success) {
+            ownedCardIds = [];
+            return;
+        }
+        const ownedDeck = decks.find(deck => deck.name === "Owned Cards");
+        if (!ownedDeck) {
+            ownedCardIds = [];
+            return;
+        }
+        const { success: cardsSuccess, cards } = await getDeckCards(ownedDeck.deck_id);
+        if (!cardsSuccess) {
+            ownedCardIds = [];
+            return;
+        }
+        // cards is an array of card objects, get their card_id or id
+        ownedCardIds = cards.map(card => card.card_id || card.id);
+    } catch (e) {
+        ownedCardIds = [];
+        console.error(e);
+    }
+}
+
+
+// --- MutationObserver to auto-refresh stars with debounce ---
+// function observeStarContainers() {
+//     const deckList = document.getElementById('deck-list');
+//     const cardResults = document.getElementById('card-results');
+//     if (!deckList || !cardResults) return;
+
+//     let debounceTimeout = null;
+//     const observer = new MutationObserver(() => {
+//         if (debounceTimeout) clearTimeout(debounceTimeout);
+//         debounceTimeout = setTimeout(() => {
+//             updateOwnedStars();
+//         }, 100); // Only run once every 100ms max
+//     });
+
+//     observer.observe(deckList, { childList: true, subtree: true });
+//     observer.observe(cardResults, { childList: true, subtree: true });
+// }
+
+// document.addEventListener('DOMContentLoaded', () => {
+//     observeStarContainers();
+// });
+
+// After rendering deck list cards, call updateOwnedStars()
+// Example: in your displayMainDeckCards or similar function, after appending all cards:
+// updateOwnedStars();
+
+// After rendering search results, call updateOwnedStars()
+// Example: in your fetchCards or similar function, after appending all cards:
+// updateOwnedStars();
+  
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+
+# Node modules
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Environment variables and secrets
+.env
+.env.*
+*.env
+secrets.*
+config.*
+
+# Ignore OS files
+.DS_Store
+Thumbs.db 

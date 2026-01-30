@@ -1,6 +1,9 @@
-import { redirect } from 'next/navigation';
+/**
+ * Root page: redirect based on session. RootRedirect (client) calls getCurrentUser()
+ * and redirects to /home or /login. Works with mock (localStorage) or real Supabase.
+ */
+import RootRedirect from './RootRedirect';
 
-// Implement: check session (e.g. getCurrentUser()); if logged in redirect to /home, else to /login
 export default function Home() {
-  redirect('/login');
+  return <RootRedirect />;
 }

@@ -1,13 +1,25 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import { signInWithGoogle } from '@/lib/auth';
 
-/**
- * Phase 1 (mock): On "Sign in" click set a stub session (e.g. localStorage.setItem('loggedIn', 'true')) and redirect to /home.
- * Phase 2 (Supabase): On click call await signInWithGoogle(); on success the OAuth flow redirects; on error show a message.
- */
 export default function LoginPage() {
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSignIn() {
+    setError(null);
+    const result = await signInWithGoogle();
+    if (result.success) {
+      const url = result.data?.url;
+      window.location.href = url ?? '/home';
+    } else {
+      const message = 'message' in result.error ? result.error.message : String(result.error);
+      setError(message);
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <Card className="relative z-10 w-full max-w-md backdrop-blur-md bg-slate-900/40 border border-blue-500/30 rounded-lg overflow-hidden shadow-lg shadow-blue-500/10">
@@ -23,16 +35,30 @@ export default function LoginPage() {
           <Button
             className="w-full btn-glow bg-blue-600 hover:bg-blue-500 text-white"
             size="lg"
-            onClick={() => {
-              // Phase 1: stub redirect. Phase 2: await signInWithGoogle(); handle redirect/error.
-              window.location.href = '/home';
-            }}
+            onClick={handleSignIn}
           >
-            Sign in with Google (stub)
+            Sign in with Google
           </Button>
-          <p className="text-sm text-gray-400 text-center">
-            Phase 1: stub session (e.g. localStorage). Phase 2: wire lib/auth.ts signInWithGoogle here.
-          </p>
+          {error && (
+            <div className="text-sm text-center space-y-1" role="alert">
+              <p className="text-red-400">{error}</p>
+              {error === 'Supabase not configured' && (
+                <div className="text-gray-400 text-xs max-w-sm mx-auto space-y-2">
+                  <p>
+                    Add <code className="bg-slate-800 px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+                    <code className="bg-slate-800 px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in{' '}
+                    <code className="bg-slate-800 px-1 rounded">.env.local</code> (same folder as <code className="bg-slate-800 px-1 rounded">package.json</code>), then restart the dev server.
+                  </p>
+                  <p className="text-gray-500">
+                    Client: URL = {process.env.NEXT_PUBLIC_SUPABASE_URL ? 'yes' : 'no'}, Key = {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'yes' : 'no'}
+                  </p>
+                  <p className="text-gray-500">
+                    Run <code className="bg-slate-800 px-1 rounded">npm run dev</code> from the folder that contains <code className="bg-slate-800 px-1 rounded">package.json</code>.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

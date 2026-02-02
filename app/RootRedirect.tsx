@@ -4,9 +4,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 
-/**
- * Client-only: check session and redirect. Works with mock (localStorage) or real Supabase.
- */
 export default function RootRedirect() {
   const router = useRouter();
 

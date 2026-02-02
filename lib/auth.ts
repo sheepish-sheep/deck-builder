@@ -1,5 +1,5 @@
 import { hasSupabaseConfig, supabase } from './supabase';
-import { createDeck, getUserDecks } from './deck-manager';
+import { createDeck, deleteDeck, getUserDecks } from './deck-manager';
 
 export async function getCurrentUser() {
   if (hasSupabaseConfig()) {
@@ -32,15 +32,34 @@ export async function signOut() {
   return { success: true as const };
 }
 
+let ensureOwnedCardsPromise: Promise<void> | null = null;
+
 export async function ensureOwnedCardsDeck() {
-  if (hasSupabaseConfig()) {
-    const result = await getUserDecks();
-    if (!result.success) return;
-    const decks = result.decks ?? [];
-    const hasOwnedCards = decks.some((d) => d.name === 'Owned Cards');
-    if (!hasOwnedCards) {
-      const createResult = await createDeck('Owned Cards', '');
-      if (!createResult.success) return;
-    }
+  if (!hasSupabaseConfig()) return;
+  if (!ensureOwnedCardsPromise) {
+    ensureOwnedCardsPromise = (async () => {
+      const result = await getUserDecks();
+      if (!result.success) return;
+      const decks = result.decks ?? [];
+      const ownedDecks = decks.filter((d) => d.name === 'Owned Cards');
+      if (ownedDecks.length === 0) {
+        const createResult = await createDeck('Owned Cards', '');
+        if (!createResult.success) return;
+      }
+      const after = await getUserDecks();
+      if (!after.success) return;
+      const ownedAfter = (after.decks ?? []).filter((d) => d.name === 'Owned Cards');
+      if (ownedAfter.length > 1) {
+        const toKeep = ownedAfter[0];
+        const keepId = toKeep.id ?? (toKeep as { deck_id?: string }).deck_id;
+        for (let i = 1; i < ownedAfter.length; i++) {
+          const dup = ownedAfter[i];
+          const dupId = dup.id ?? (dup as { deck_id?: string }).deck_id;
+          if (dupId) await deleteDeck(dupId);
+        }
+      }
+    })();
   }
+  await ensureOwnedCardsPromise;
+  ensureOwnedCardsPromise = null;
 }

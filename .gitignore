@@ -19,6 +19,8 @@ config.*
 
 # Ignore OS files
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+supabase-schema.sql
 
 PLAN.md

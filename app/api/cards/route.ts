@@ -9,8 +9,6 @@ export async function GET(_request: Request) {
   const race = searchParams.get('race') || null;
   const attribute = searchParams.get('attribute');
   const archetype = searchParams.get('archetype') || null;
-  const linkval = searchParams.get('linkval') || '0';
-  const linkmarkers = searchParams.get('linkmarkers') || null;
   const level = searchParams.get('level');
   const pendulum_scale = searchParams.get('pendulum_scale');
   const id = searchParams.get('id');
@@ -24,20 +22,28 @@ export async function GET(_request: Request) {
   if (race) apiUrl.searchParams.set('race', race);
   if (attribute) apiUrl.searchParams.set('attribute', attribute);
   if (archetype) apiUrl.searchParams.set('archetype', archetype);
-  if (linkval) apiUrl.searchParams.set('linkval', linkval);
-  if (linkmarkers) apiUrl.searchParams.set('linkmarkers', linkmarkers);
   if (level) apiUrl.searchParams.set('level', level);
   if (pendulum_scale) apiUrl.searchParams.set('pendulum_scale', pendulum_scale);
   if (id) apiUrl.searchParams.set('id', id);
   if (desc) apiUrl.searchParams.set('desc', desc);
 
-  const response = await fetch(apiUrl.toString());
-  const json = await response.json();
-  const data = Array.isArray(json?.data) ? json.data : [];
-  console.log("API URL: " + apiUrl.toString());
-  console.log("Response: " + response.status);
-  console.log("JSON: " + json);
-  console.log("Data: " + data);
-  console.log("done fetching cards");
+  const response = await fetch(apiUrl.toString(), { cache: 'no-store' });
+  const text = await response.text();
+  let json: { data?: unknown; error?: string } = {};
+  try {
+    json = JSON.parse(text);
+  } catch {
+    // ignore
+  }
+  let data: unknown[] = [];
+  if (Array.isArray(json?.data)) {
+    data = json.data;
+  } else if (json?.data && typeof json.data === 'object' && !Array.isArray(json.data)) {
+    data = [json.data];
+  } else if (Array.isArray(json)) {
+    data = json as unknown[];
+  } else if (json && typeof json === 'object' && 'id' in json && 'name' in json) {
+    data = [json];
+  }
   return NextResponse.json(data);
 }

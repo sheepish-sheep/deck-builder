@@ -90,7 +90,7 @@ export async function deleteDeck(_deckId: string) {
 
 export async function updateDeckName(_deckId: string, _newName: string) {
   if (hasSupabaseConfig()) {
-    const {data, error} = await supabase.from('decks').update({name: _newName}).eq('deck_id', _deckId).select().single();
+    const {data, error} = await supabase.from('decks').update({name: _newName}).eq('id', _deckId).select().single();
     if (error) return {success: false as const, error: {message: error.message}};
     return {success: true as const, data: data};
   }

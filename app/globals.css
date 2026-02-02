@@ -4,24 +4,24 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
+    --background: 222.2 84% 2.8%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222.2 84% 3.5%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222.2 84% 3.5%;
     --popover-foreground: 210 40% 98%;
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217.2 32.6% 11%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --muted: 217.2 32.6% 11%;
+    --muted-foreground: 215 20.2% 58%;
+    --accent: 217.2 32.6% 11%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217.2 32.6% 12%;
+    --input: 217.2 32.6% 11%;
     --ring: 224.3 76.3% 48%;
     --radius: 0.5rem;
   }
@@ -46,7 +46,6 @@
   }
 }
 
-/* Old site: glow button (shine on hover) */
 .btn-glow {
   position: relative;
   z-index: 1;
@@ -73,21 +72,18 @@
   transform: translateX(100%) rotate(30deg);
 }
 
-/* Old site: blue glow page titles */
 .page-title {
   text-shadow:
     0 0 10px rgba(59, 130, 246, 0.5),
     0 0 20px rgba(59, 130, 246, 0.3);
 }
 
-/* Old site: table/card container */
 .table-container {
   overflow: hidden;
   border-radius: 1rem;
   box-shadow: 0 0 30px rgba(17, 24, 39, 0.7);
 }
 
-/* Old site: float animation */
 @keyframes float {
   0%,
   100% {
@@ -99,4 +95,43 @@
 }
 .float-animation {
   animation: float 5s ease-in-out infinite;
+}
+
+@keyframes orb-drift-1 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.32; }
+  25% { transform: translate(100px, -70px) scale(1.12); opacity: 0.42; }
+  50% { transform: translate(-80px, 60px) scale(0.9); opacity: 0.28; }
+  75% { transform: translate(60px, 80px) scale(1.08); opacity: 0.38; }
+  100% { transform: translate(0, 0) scale(1); opacity: 0.32; }
+}
+@keyframes orb-drift-2 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.28; }
+  25% { transform: translate(-90px, 90px) scale(1.1); opacity: 0.38; }
+  50% { transform: translate(70px, -60px) scale(0.88); opacity: 0.26; }
+  75% { transform: translate(-50px, -70px) scale(1.06); opacity: 0.34; }
+  100% { transform: translate(0, 0) scale(1); opacity: 0.28; }
+}
+@keyframes orb-drift-3 {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.22; }
+  33% { transform: translate(80px, 70px) scale(1.15); opacity: 0.32; }
+  66% { transform: translate(-70px, -50px) scale(0.85); opacity: 0.18; }
+  100% { transform: translate(0, 0) scale(1); opacity: 0.22; }
+}
+.orb-animate-1 { animation: orb-drift-1 12s ease-in-out infinite; }
+.orb-animate-2 { animation: orb-drift-2 14s ease-in-out infinite; }
+.orb-animate-3 { animation: orb-drift-3 11s ease-in-out infinite; }
+
+.quadrant-card {
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.25),
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 60px rgba(59, 130, 246, 0.08);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.quadrant-card:hover {
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.4),
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 0 80px rgba(59, 130, 246, 0.12);
+  transform: translateY(-2px);
 }
